@@ -1,0 +1,26 @@
+module Tools
+  class AddToBacklog < MCP::Tool
+    name: "add_to_backlog",
+    description: "Adds a game to the user's backlog",
+    input_schema: (
+      properties: {
+        user_id:{
+          type: "integer"
+          description: "ID of User"
+        }
+        game_id: {
+          type: "integer",
+          description: "ID of the game"
+        },
+        status: {
+          type: "string",
+          description: "Initial backlog status",
+          enum: ["pending", "playing", "completed"]
+        }
+      },
+      required: ["game_id", "user_id"]
+    ) do |arguments|
+      AddToBacklog.call(arguments)
+    end
+  end
+end
