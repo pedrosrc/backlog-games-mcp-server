@@ -18,6 +18,7 @@ a backlog, rate games and get recommendations.
 | `create_game`    | `name`                                           | Creates a game and returns its ID            |
 | `search_game`    | `query`                                          | Finds games by (partial) name                |
 | `add_to_backlog` | `user_id`, `game_id`, `status` (optional)        | Adds a game to a user's backlog              |
+| `remove_from_backlog` | `user_id`, `game_id`                        | Removes a game from a user's backlog         |
 | `list_backlog`   | `user_id`                                        | Lists a user's backlog with statuses         |
 | `rate_game`      | `user_id`, `game_id`, `rating` (0–10)            | Creates or updates a user's rating of a game |
 | `recommend_game` | `user_id`                                        | Suggests top-rated games not yet in backlog  |

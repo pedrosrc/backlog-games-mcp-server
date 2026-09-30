@@ -8,7 +8,8 @@ An MCP client (for example an AI assistant) can:
 - create users and games,
 - search for games by name,
 - add games to a user's backlog with a status (`pending`, `playing`, `completed`),
-- list a user's backlog,
+- list a user's backlog (with each game's status and the user's rating),
+- remove a game from a backlog,
 - rate games from 0 to 10,
 - get recommendations based on the average rating of games the user has not
   added to their backlog yet.
@@ -64,7 +65,9 @@ Success:
 Services may also return `structured_content:` (a Hash). It is sent to the client
 as `structuredContent`, so clients read IDs without parsing text. `create_user` /
 `create_game` return `{ id:, name: }` and `search_game` returns
-`{ games: [{ id:, name: }] }`.
+`{ games: [{ id:, name: }] }`. `list_backlog` returns
+`{ items: [{ game_id:, name:, status:, rating: }] }` (`rating` is `nil` when the user
+has not rated the game).
 
 Error (validation failure or record not found):
 
@@ -91,7 +94,9 @@ Error (validation failure or record not found):
 - **`add_to_backlog`** — requires `user_id` and `game_id`; `status` must be one of
   `pending`, `playing`, `completed` (default `pending`).
 - **`list_backlog`** — one text entry per item (`Game `X` - Status: Y`), or a
-  message saying the backlog is empty.
+  message saying the backlog is empty; `structuredContent` carries the items.
+- **`remove_from_backlog`** — requires `user_id` and `game_id`; errors if the game is
+  not in that user's backlog. The user's rating is kept.
 - **`rate_game`** — `rating` must be a number in `0..10`. Uses
   `find_or_initialize_by`, so rating the same game again updates the rating.
 - **`recommend_game`** — up to 5 games not in the user's backlog, ordered by
