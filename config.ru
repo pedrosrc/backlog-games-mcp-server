@@ -2,5 +2,11 @@
 
 require_relative "config/environment"
 
-run Rails.application
-Rails.application.load_server
+# MCP endpoint (Streamable HTTP): http://localhost:3000/mcp
+map "/mcp" do
+  run McpServer.rack_app
+end
+
+map "/" do
+  run Rails.application
+end

@@ -18,7 +18,8 @@ class SearchGame
             type: "text",
             text: "No games found for `#{query}`"
           }
-        ]
+        ],
+        structured_content: { games: [] }
       }
     end
 
@@ -28,7 +29,8 @@ class SearchGame
           type: "text",
           text: "Game `#{game.name}` - ID: #{game.id}"
         }
-      end
+      end,
+      structured_content: { games: games.map { |game| { id: game.id, name: game.name } } }
     }
   end
 
