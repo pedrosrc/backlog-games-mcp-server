@@ -13,6 +13,26 @@ class ListBacklogTest < ActiveSupport::TestCase
     assert_equal [ "Game `Zelda` - Status: playing", "Game `Mario` - Status: completed" ], texts(response)
   end
 
+  test "returns structured items with game ID, status and the user's rating" do
+    zelda = create_game(name: "Zelda")
+    mario = create_game(name: "Mario")
+    BacklogItem.create!(user: @user, game: zelda, status: "playing")
+    BacklogItem.create!(user: @user, game: mario, status: "pending")
+    Rating.create!(user: @user, game: zelda, rating: 9.5)
+    Rating.create!(user: create_user(name: "Bia"), game: mario, rating: 2)
+
+    items = ListBacklog.call("user_id" => @user.id)[:structured_content][:items]
+
+    assert_equal [
+      { game_id: zelda.id, name: "Zelda", status: "playing", rating: 9.5 },
+      { game_id: mario.id, name: "Mario", status: "pending", rating: nil }
+    ], items
+  end
+
+  test "structured items are empty for an empty backlog" do
+    assert_equal({ items: [] }, ListBacklog.call("user_id" => @user.id)[:structured_content])
+  end
+
   test "does not list other users' items" do
     BacklogItem.create!(user: create_user(name: "Bia"), game: create_game)
 

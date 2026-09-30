@@ -5,6 +5,7 @@ class ToolsTest < ActiveSupport::TestCase
     Tools::CreateUser => { name: "create_user", required: %w[name email] },
     Tools::CreateGame => { name: "create_game", required: %w[name] },
     Tools::AddToBacklog => { name: "add_to_backlog", required: %w[game_id user_id] },
+    Tools::RemoveFromBacklog => { name: "remove_from_backlog", required: %w[user_id game_id] },
     Tools::ListBacklog => { name: "list_backlog", required: %w[user_id] },
     Tools::RateGame => { name: "rate_game", required: %w[user_id game_id rating] },
     Tools::RecommendGame => { name: "recommend_game", required: %w[user_id] },
@@ -37,6 +38,15 @@ class ToolsTest < ActiveSupport::TestCase
     BacklogItem.create!(user: user, game: create_game, status: "pending")
 
     assert_equal [ "Game `Zelda` - Status: pending" ], texts(Tools::ListBacklog.call(user_id: user.id))
+  end
+
+  test "remove_from_backlog forwards to the service" do
+    user = create_user
+    game = create_game
+    BacklogItem.create!(user: user, game: game)
+
+    assert_equal [ "Game `Zelda` removed from backlog" ], texts(Tools::RemoveFromBacklog.call(user_id: user.id, game_id: game.id))
+    assert_equal 0, BacklogItem.count
   end
 
   test "rate_game forwards to the service" do
