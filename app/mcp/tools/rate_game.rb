@@ -21,7 +21,7 @@ module Tools
     )
 
     def self.call(**arguments)
-      ::RateGame.call(arguments.stringify_keys)
+      ServiceResponse.wrap(::RateGame.call(arguments.stringify_keys))
     end
   end
 end

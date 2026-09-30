@@ -22,7 +22,7 @@ module Tools
     )
 
     def self.call(**arguments)
-      ::AddToBacklog.call(arguments.stringify_keys)
+      ServiceResponse.wrap(::AddToBacklog.call(arguments.stringify_keys))
     end
   end
 end

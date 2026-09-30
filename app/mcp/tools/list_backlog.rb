@@ -13,7 +13,7 @@ module Tools
     )
 
     def self.call(**arguments)
-      ::ListBacklog.call(arguments.stringify_keys)
+      ServiceResponse.wrap(::ListBacklog.call(arguments.stringify_keys))
     end
   end
 end

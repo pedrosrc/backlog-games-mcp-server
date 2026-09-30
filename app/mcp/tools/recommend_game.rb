@@ -13,7 +13,7 @@ module Tools
     )
 
     def self.call(**arguments)
-      ::RecommendGame.call(arguments.stringify_keys)
+      ServiceResponse.wrap(::RecommendGame.call(arguments.stringify_keys))
     end
   end
 end

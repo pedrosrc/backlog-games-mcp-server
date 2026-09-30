@@ -13,7 +13,7 @@ module Tools
     )
 
     def self.call(**arguments)
-      ::SearchGame.call(arguments.stringify_keys)
+      ServiceResponse.wrap(::SearchGame.call(arguments.stringify_keys))
     end
   end
 end
