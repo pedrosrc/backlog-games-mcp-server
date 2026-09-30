@@ -2,6 +2,8 @@ require "test_helper"
 
 class ToolsTest < ActiveSupport::TestCase
   TOOLS = {
+    Tools::CreateUser => { name: "create_user", required: %w[name email] },
+    Tools::CreateGame => { name: "create_game", required: %w[name] },
     Tools::AddToBacklog => { name: "add_to_backlog", required: %w[game_id user_id] },
     Tools::ListBacklog => { name: "list_backlog", required: %w[user_id] },
     Tools::RateGame => { name: "rate_game", required: %w[user_id game_id rating] },
@@ -56,6 +58,25 @@ class ToolsTest < ActiveSupport::TestCase
     game = create_game(name: "Halo")
 
     assert_equal [ "Game `Halo` - ID: #{game.id}" ], texts(Tools::SearchGame.call(query: "hal"))
+  end
+
+  test "create_user and create_game forward to the services and return structured content" do
+    user_response = Tools::CreateUser.call(name: "Ana", email: "ana@example.com")
+    game_response = Tools::CreateGame.call(name: "Halo")
+
+    assert_equal({ id: User.last.id, name: "Ana", email: "ana@example.com" }, user_response.structured_content)
+    assert_equal({ id: Game.last.id, name: "Halo" }, game_response.structured_content)
+  end
+
+  test "search_game returns structured content" do
+    game = create_game(name: "Halo")
+
+    assert_equal({ games: [ { id: game.id, name: "Halo" } ] }, Tools::SearchGame.call(query: "hal").structured_content)
+  end
+
+  test "tools return MCP::Tool::Response objects" do
+    assert_kind_of MCP::Tool::Response, Tools::SearchGame.call(query: "x")
+    assert Tools::SearchGame.call(query: "").error?
   end
 
   test "tools surface service errors" do

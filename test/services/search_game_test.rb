@@ -11,6 +11,13 @@ class SearchGameTest < ActiveSupport::TestCase
     assert_equal [ "Game `The Legend of Zelda` - ID: #{zelda.id}" ], texts(response)
   end
 
+  test "returns structured content with game IDs" do
+    zelda = create_game(name: "Zelda")
+
+    assert_equal({ games: [ { id: zelda.id, name: "Zelda" } ] }, SearchGame.call("query" => "zel")[:structured_content])
+    assert_equal({ games: [] }, SearchGame.call("query" => "nope")[:structured_content])
+  end
+
   test "orders results by name" do
     create_game(name: "Halo 2")
     create_game(name: "Halo 1")
