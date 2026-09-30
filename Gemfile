@@ -10,9 +10,9 @@ gem "solid_cable"
 gem "bootsnap", require: false
 gem "kamal", require: false
 gem "thruster", require: false
-gem 'pg', '>= 1.6.3'
-gem 'dotenv', '>= 3.2'
-gem 'mcp', '>= 1.6'
+gem "pg", ">= 1.6.3"
+gem "dotenv", ">= 3.2"
+gem "mcp", ">= 1.6"
 
 group :development, :test do
   gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
