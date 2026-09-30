@@ -1,17 +1,19 @@
 module Tools
   class ListBacklog < MCP::Tool
-    name: "list_backlog",
-    description: "Lists the user's backlog",
-    input_schema: (
+    tool_name "list_backlog"
+    description "Lists the user's backlog"
+    input_schema(
       properties: {
-        user_id:{
-          type: "integer"
+        user_id: {
+          type: "integer",
           description: "ID of User"
         }
       },
-      required: ["user_id"]
-    ) do |arguments|
-      ListBacklog.call(arguments)
+      required: [ "user_id" ]
+    )
+
+    def self.call(**arguments)
+      ::ListBacklog.call(arguments.stringify_keys)
     end
   end
 end

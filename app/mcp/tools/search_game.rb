@@ -9,7 +9,7 @@ module Tools
           description: "Text to search in the game name"
         }
       },
-      required: ["query"]
+      required: [ "query" ]
     )
 
     def self.call(**arguments)

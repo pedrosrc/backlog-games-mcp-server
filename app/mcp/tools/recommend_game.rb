@@ -1,17 +1,19 @@
 module Tools
   class RecommendGame < MCP::Tool
-    name: "recommend_game",
-    description: "Recommends a game for a user",
-    input_schema: (
+    tool_name "recommend_game"
+    description "Recommends a game for a user"
+    input_schema(
       properties: {
-        user_id:{
-          type: "integer"
+        user_id: {
+          type: "integer",
           description: "ID of User"
         }
       },
-      required: ["user_id"]
-    ) do |arguments|
-      RecommendGame.call(arguments)
+      required: [ "user_id" ]
+    )
+
+    def self.call(**arguments)
+      ::RecommendGame.call(arguments.stringify_keys)
     end
   end
 end
