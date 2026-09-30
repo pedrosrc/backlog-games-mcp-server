@@ -5,6 +5,7 @@
 A backlog manager for video games, exposed through the Model Context Protocol.
 An MCP client (for example an AI assistant) can:
 
+- create users and games,
 - search for games by name,
 - add games to a user's backlog with a status (`pending`, `playing`, `completed`),
 - list a user's backlog,
@@ -22,6 +23,13 @@ behavior lives in MCP tools.
 
 ```
 MCP client
+   │  HTTP POST /mcp  (Authorization: Bearer <MCP_AUTH_TOKEN>)
+   ▼
+config.ru            maps /mcp to McpServer.rack_app, everything else to Rails
+   ▼
+app/mcp/mcp_auth.rb  Rack middleware: bearer-token check
+   ▼
+app/mcp/mcp_server.rb  MCP::Server + StreamableHTTPTransport (stateless, JSON)
    │  tool call (name + JSON arguments)
    ▼
 app/mcp/tools/*      MCP::Tool subclasses: name, description, input schema
@@ -35,7 +43,9 @@ app/models/*         ActiveRecord models (PostgreSQL)
 
 - **Tools** (`app/mcp/tools/`, namespace `Tools`) are thin. Each declares
   `tool_name`, `description` and `input_schema`, and its `self.call(**arguments)`
-  forwards the arguments to the same-named service with `stringify_keys`. The
+  forwards the arguments to the same-named service with `stringify_keys` and wraps
+  the result with `Tools::ServiceResponse.wrap`, which builds the
+  `MCP::Tool::Response` the server expects. The
   `mcp` gem passes keyword arguments with symbol keys; services read string keys.
   Services are referenced as `::SearchGame` etc. because inside `Tools` the bare
   name would resolve to the tool class itself.
@@ -51,6 +61,11 @@ Success:
 { content: [ { type: "text", text: "..." } ] }
 ```
 
+Services may also return `structured_content:` (a Hash). It is sent to the client
+as `structuredContent`, so clients read IDs without parsing text. `create_user` /
+`create_game` return `{ id:, name: }` and `search_game` returns
+`{ games: [{ id:, name: }] }`.
+
 Error (validation failure or record not found):
 
 ```ruby
@@ -61,13 +76,15 @@ Error (validation failure or record not found):
 
 | Model         | Columns (besides timestamps)                | Notes                                       |
 | ------------- | ------------------------------------------- | ------------------------------------------- |
-| `User`        | `name`                                      | has many backlog items                      |
+| `User`        | `name`, `email` (unique, lowercased)        | has many backlog items; no password (auth lives in the client) |
 | `Game`        | `name`                                      | has many backlog items and ratings          |
 | `BacklogItem` | `user_id`, `game_id`, `status`              | `status` defaults to `pending`              |
 | `Rating`      | `user_id`, `game_id`, `rating` (float)      | unique per `(user_id, game_id)`             |
 
 ### Tool behavior
 
+- **`create_user` / `create_game`** — `create_user` requires `name` and a unique, valid `email`; `create_game` requires `name`; return the new record's ID
+  in the text and in `structuredContent`.
 - **`search_game`** — case-insensitive partial match on `games.name` (`ILIKE`),
   `%` and `_` in the query are treated literally. Ordered by name, max 10 results.
   Each result includes the game ID so it can be used with the other tools.
@@ -102,11 +119,12 @@ any migration.
 | Path                          | Covers                                                                 |
 | ----------------------------- | ---------------------------------------------------------------------- |
 | `test/services/*_test.rb`     | One file per service: happy path, required args, invalid values, missing records |
-| `test/mcp/tools/tools_test.rb`| Tool name, description and `required` schema; that each tool forwards symbol-keyed arguments to its service |
+| `test/mcp/tools/tools_test.rb`| Tool name, description and `required` schema; that each tool forwards symbol-keyed arguments to its service and returns an `MCP::Tool::Response` |
+| `test/integration/mcp_endpoint_test.rb` | The HTTP endpoint: JSON-RPC calls and bearer-token auth |
 | `test/test_helper.rb`         | Shared helpers: `texts`, `assert_success`, `assert_error`, `create_user`, `create_game` |
 
-The tests exercise tools and services directly. They do not start the MCP
-server or perform a real client handshake.
+Tools and services are tested directly, and the Rack app is called in-process.
+No real HTTP server is started.
 
 Other checks run in CI: `bin/rubocop`, `bin/brakeman --no-pager` and
 `bin/bundler-audit`.
@@ -138,12 +156,18 @@ Other checks run in CI: `bin/rubocop`, `bin/brakeman --no-pager` and
 
 If the feature needs new columns, check `db/schema.rb` and add a migration first.
 
-## Known gaps
+## Running and securing the endpoint
 
-- **Server bootstrap:** `config.ru` calls `Rails.application.load_server`, but no
-  such method is defined in the repo, and no `MCP::Server` is created or given
-  the tools. Until this is wired, the app cannot be started as an MCP server.
-- **Response type:** tools return plain hashes. The `mcp` gem's server may expect
-  `MCP::Tool::Response`; verify once the server is wired.
-- **No data-entry tools:** there are no tools to create users or games, so they
-  must be created through the Rails console or seeds.
+```bash
+MCP_AUTH_TOKEN=change-me bin/rails s -p 3001
+curl -s localhost:3001/mcp -H "Authorization: Bearer change-me" \
+  -H "Content-Type: application/json" -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+- Without `MCP_AUTH_TOKEN`, development and test accept any request; production
+  rejects every request (fail closed).
+- The transport runs in stateless mode with JSON responses, so there are no
+  sessions or long-lived SSE streams.
+- `test/integration/mcp_endpoint_test.rb` exercises the Rack app (tool listing,
+  a full tool call, tool errors and the token check).

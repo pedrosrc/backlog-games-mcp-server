@@ -5,15 +5,17 @@ A Rails 8.1 API-only application that exposes a game backlog manager as an
 of a REST API, an MCP client (such as Claude) calls tools to search games, manage
 a backlog, rate games and get recommendations.
 
-> **Status:** the tools, services, models and tests are in place. The MCP server
-> bootstrap is not wired yet: `config.ru` calls `Rails.application.load_server`,
-> which is not defined anywhere in the repo. See
-> [Known gaps](docs/PROJECT.md#known-gaps).
+> **Endpoint:** `POST /mcp` (MCP Streamable HTTP, stateless, JSON responses).
+> Start it with `bin/rails s -p 3001`. Set `MCP_AUTH_TOKEN` to require
+> `Authorization: Bearer <token>` (mandatory in production). The companion web
+> app is [backlog-games-mcp-client](../backlog-games-mcp-client).
 
 ## Tools
 
 | Tool             | Arguments                                        | Description                                  |
 | ---------------- | ------------------------------------------------ | -------------------------------------------- |
+| `create_user`    | `name`, `email`                                  | Creates a user and returns its ID            |
+| `create_game`    | `name`                                           | Creates a game and returns its ID            |
 | `search_game`    | `query`                                          | Finds games by (partial) name                |
 | `add_to_backlog` | `user_id`, `game_id`, `status` (optional)        | Adds a game to a user's backlog              |
 | `list_backlog`   | `user_id`                                        | Lists a user's backlog with statuses         |
@@ -38,6 +40,7 @@ Create a `.env` file (loaded by `dotenv`) with the database connection:
 DEV_POSTGRES_HOST=localhost
 DEV_POSTGRES_USER=postgres
 DEV_POSTGRES_PASSWORD=secret
+MCP_AUTH_TOKEN=change-me   # optional in development
 ```
 
 Then create the database:
