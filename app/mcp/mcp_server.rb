@@ -4,6 +4,7 @@ module McpServer
     Tools::CreateGame,
     Tools::SearchGame,
     Tools::AddToBacklog,
+    Tools::RemoveFromBacklog,
     Tools::ListBacklog,
     Tools::RateGame,
     Tools::RecommendGame

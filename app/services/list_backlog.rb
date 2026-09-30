@@ -5,7 +5,7 @@ class ListBacklog
 
     user = User.find(arguments["user_id"])
 
-    backlog_items = BacklogItem.where(user: user)
+    backlog_items = BacklogItem.where(user: user).includes(:game).order(:id)
 
     if backlog_items.empty?
       return {
@@ -14,9 +14,12 @@ class ListBacklog
             type: "text",
             text: "Backlog is empty for user `#{user.name}`"
           }
-        ]
+        ],
+        structured_content: { items: [] }
       }
     end
+
+    ratings = Rating.where(user: user).pluck(:game_id, :rating).to_h
 
     {
       content: backlog_items.map do |item|
@@ -24,7 +27,12 @@ class ListBacklog
           type: "text",
           text: "Game `#{item.game.name}` - Status: #{item.status}"
         }
-      end
+      end,
+      structured_content: {
+        items: backlog_items.map do |item|
+          { game_id: item.game_id, name: item.game.name, status: item.status, rating: ratings[item.game_id] }
+        end
+      }
     }
   rescue ActiveRecord::RecordNotFound
     error("User not found")
